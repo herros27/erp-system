@@ -1,0 +1,770 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== COMPANY ====================
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  logo      String?
+  address   String?
+  email     String?
+  phone     String?
+  taxId     String?  @map("tax_id")
+  currency  String   @default("IDR")
+  timezone  String   @default("Asia/Jakarta")
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userCompanies    UserCompany[]
+  products         Product[]
+  categories       Category[]
+  suppliers        Supplier[]
+  customers        Customer[]
+  warehouses       Warehouse[]
+  units            Unit[]
+  inventories      Inventory[]
+  stockMovements   StockMovement[]
+  purchaseRequests PurchaseRequest[]
+  purchaseOrders   PurchaseOrder[]
+  goodsReceipts    GoodsReceipt[]
+  salesOrders      SalesOrder[]
+  invoices         Invoice[]
+  payments         Payment[]
+  accounts         Account[]
+  journals         Journal[]
+  approvals        Approval[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+  deliveryOrders   DeliveryOrder[]
+  attachments      Attachment[]
+
+  @@map("companies")
+}
+
+// ==================== USER & AUTH ====================
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  avatar    String?
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userCompanies    UserCompany[]
+  auditLogs        AuditLog[]
+  approvalsMade    Approval[]      @relation("ApprovalApprover")
+  approvalsCreated Approval[]      @relation("ApprovalRequester")
+  notifications    Notification[]
+  attachments      Attachment[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String   @map("display_name")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  permissions RolePermission[]
+  userCompanies UserCompany[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(cuid())
+  module   String
+  action   String
+  name     String @unique
+  description String?
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserCompany {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  companyId String   @map("company_id")
+  roleId    String   @map("role_id")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, companyId])
+  @@map("user_companies")
+}
+
+// ==================== MASTER DATA ====================
+model Category {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  name      String
+  description String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([companyId])
+  @@map("categories")
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  name      String
+  symbol    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([companyId])
+  @@map("units")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  companyId    String   @map("company_id")
+  categoryId   String?  @map("category_id")
+  unitId       String?  @map("unit_id")
+  code         String
+  name         String
+  description  String?
+  barcode      String?
+  buyPrice     Float    @default(0) @map("buy_price")
+  sellPrice    Float    @default(0) @map("sell_price")
+  minStock     Int      @default(0) @map("min_stock")
+  image        String?
+  status       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  unit               Unit?               @relation(fields: [unitId], references: [id])
+  inventories        Inventory[]
+  stockMovements     StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
+  salesOrderItems    SalesOrderItem[]
+  invoiceItems       InvoiceItem[]
+  deliveryOrderItems DeliveryOrderItem[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([barcode])
+  @@map("products")
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  code      String
+  name      String
+  address   String?
+  email     String?
+  phone     String?
+  taxId     String?  @map("tax_id")
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+  purchaseRequests PurchaseRequest[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("suppliers")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  code      String
+  name      String
+  address   String?
+  email     String?
+  phone     String?
+  taxId     String?  @map("tax_id")
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesOrders SalesOrder[]
+  invoices    Invoice[]
+
+  // Relationship to Parent / Child Customer
+  parentId    String?      @map("parent_id")
+  parent      Customer?    @relation("CustomerSubsidiaries", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Customer[]   @relation("CustomerSubsidiaries")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("customers")
+}
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  code      String
+  name      String
+  address   String?
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  inventories     Inventory[]
+  stockMovementsFrom StockMovement[] @relation("StockMovementFrom")
+  stockMovementsTo   StockMovement[] @relation("StockMovementTo")
+  goodsReceipts   GoodsReceipt[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("warehouses")
+}
+
+// ==================== INVENTORY ====================
+model Inventory {
+  id          String @id @default(cuid())
+  companyId   String @map("company_id")
+  productId   String @map("product_id")
+  warehouseId String @map("warehouse_id")
+  quantity    Int    @default(0)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([companyId, productId, warehouseId])
+  @@index([companyId])
+  @@map("inventories")
+}
+
+model StockMovement {
+  id              String   @id @default(cuid())
+  companyId       String   @map("company_id")
+  productId       String   @map("product_id")
+  fromWarehouseId String?  @map("from_warehouse_id")
+  toWarehouseId   String?  @map("to_warehouse_id")
+  type            StockMovementType
+  quantity        Int
+  reference       String?
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  createdBy       String?  @map("created_by")
+
+  company       Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product       Product    @relation(fields: [productId], references: [id])
+  fromWarehouse Warehouse? @relation("StockMovementFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse? @relation("StockMovementTo", fields: [toWarehouseId], references: [id])
+
+  @@index([companyId])
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  TRANSFER
+  ADJUSTMENT
+  PURCHASE_RECEIPT
+  SALES_DELIVERY
+  RETURN_IN
+  RETURN_OUT
+}
+
+// ==================== PURCHASING ====================
+model PurchaseRequest {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  number      String
+  supplierId  String?  @map("supplier_id")
+  requestDate DateTime @map("request_date")
+  notes       String?
+  status      ApprovalStatus @default(PENDING)
+  totalAmount Float    @default(0) @map("total_amount")
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier       Supplier?        @relation(fields: [supplierId], references: [id])
+  items          PurchaseRequestItem[]
+  purchaseOrders PurchaseOrder[]
+  approvals      Approval[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestItem {
+  id                String  @id @default(cuid())
+  purchaseRequestId String  @map("purchase_request_id")
+  productName       String  @map("product_name")
+  quantity          Int
+  unitPrice         Float   @default(0) @map("unit_price")
+  notes             String?
+
+  purchaseRequest PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_request_items")
+}
+
+model PurchaseOrder {
+  id                String   @id @default(cuid())
+  companyId         String   @map("company_id")
+  purchaseRequestId String?  @map("purchase_request_id")
+  supplierId        String   @map("supplier_id")
+  number            String
+  orderDate         DateTime @map("order_date")
+  expectedDate      DateTime? @map("expected_date")
+  notes             String?
+  status            PurchaseOrderStatus @default(DRAFT)
+  subtotal          Float    @default(0)
+  tax               Float    @default(0)
+  total             Float    @default(0)
+  createdBy         String?  @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseRequest PurchaseRequest?  @relation(fields: [purchaseRequestId], references: [id])
+  supplier        Supplier          @relation(fields: [supplierId], references: [id])
+  items           PurchaseOrderItem[]
+  goodsReceipts   GoodsReceipt[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("purchase_orders")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  CONFIRMED
+  PARTIAL_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrderItem {
+  id              String @id @default(cuid())
+  purchaseOrderId String @map("purchase_order_id")
+  productId       String @map("product_id")
+  quantity        Int
+  receivedQty     Int    @default(0) @map("received_qty")
+  unitPrice       Float  @map("unit_price")
+  subtotal        Float  @default(0)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+model GoodsReceipt {
+  id              String   @id @default(cuid())
+  companyId       String   @map("company_id")
+  purchaseOrderId String   @map("purchase_order_id")
+  warehouseId     String   @map("warehouse_id")
+  number          String
+  receiptDate     DateTime @map("receipt_date")
+  notes           String?
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  warehouse     Warehouse          @relation(fields: [warehouseId], references: [id])
+  items         GoodsReceiptItem[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id             String @id @default(cuid())
+  goodsReceiptId String @map("goods_receipt_id")
+  productId      String @map("product_id")
+  quantity       Int
+
+  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id])
+
+  @@map("goods_receipt_items")
+}
+
+// ==================== SALES ====================
+model SalesOrder {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  customerId  String   @map("customer_id")
+  number      String
+  orderDate   DateTime @map("order_date")
+  notes       String?
+  status      SalesOrderStatus @default(DRAFT)
+  subtotal    Float    @default(0)
+  tax         Float    @default(0)
+  total       Float    @default(0)
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer  Customer         @relation(fields: [customerId], references: [id])
+  items     SalesOrderItem[]
+  invoices  Invoice[]
+  deliveryOrders DeliveryOrder[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("sales_orders")
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  INDENT
+  INVOICED
+  COMPLETED
+  CANCELLED
+}
+
+model SalesOrderItem {
+  id           String @id @default(cuid())
+  salesOrderId String @map("sales_order_id")
+  productId    String @map("product_id")
+  quantity     Int
+  fulfilledQty Int    @default(0) @map("fulfilled_qty")
+  indentQty    Int    @default(0) @map("indent_qty")
+  unitPrice    Float  @map("unit_price")
+  subtotal     Float  @default(0)
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@map("sales_order_items")
+}
+
+// ==================== DELIVERY (SURAT JALAN) ====================
+model DeliveryOrder {
+  id           String   @id @default(cuid())
+  companyId    String   @map("company_id")
+  salesOrderId String   @map("sales_order_id")
+  number       String
+  deliveryDate DateTime @map("delivery_date")
+  driverName   String?  @map("driver_name")
+  licensePlate String?  @map("license_plate")
+  notes        String?
+  status       DeliveryStatus @default(SHIPPED)
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  company    Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesOrder SalesOrder          @relation(fields: [salesOrderId], references: [id])
+  items      DeliveryOrderItem[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("delivery_orders")
+}
+
+enum DeliveryStatus {
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model DeliveryOrderItem {
+  id              String @id @default(cuid())
+  deliveryOrderId String @map("delivery_order_id")
+  productId       String @map("product_id")
+  quantity        Int
+
+  deliveryOrder DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@map("delivery_order_items")
+}
+
+
+
+// ==================== INVOICE & PAYMENT ====================
+model Invoice {
+  id           String   @id @default(cuid())
+  companyId    String   @map("company_id")
+  salesOrderId String?  @map("sales_order_id")
+  customerId   String   @map("customer_id")
+  number       String
+  invoiceDate  DateTime @map("invoice_date")
+  dueDate      DateTime @map("due_date")
+  notes        String?
+  status       InvoiceStatus @default(UNPAID)
+  subtotal     Float    @default(0)
+  tax          Float    @default(0)
+  total        Float    @default(0)
+  paidAmount   Float    @default(0) @map("paid_amount")
+  createdBy    String?  @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  company    Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesOrder SalesOrder?    @relation(fields: [salesOrderId], references: [id])
+  customer   Customer       @relation(fields: [customerId], references: [id])
+  items      InvoiceItem[]
+  payments   Payment[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model InvoiceItem {
+  id        String @id @default(cuid())
+  invoiceId String @map("invoice_id")
+  productId String @map("product_id")
+  quantity  Int
+  unitPrice Float  @map("unit_price")
+  subtotal  Float  @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("invoice_items")
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  invoiceId String   @map("invoice_id")
+  number    String
+  amount    Float
+  method    String
+  paymentDate DateTime @map("payment_date")
+  notes     String?
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("payments")
+}
+
+// ==================== ACCOUNTING ====================
+model Account {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  code      String
+  name      String
+  type      AccountType
+  parentId  String?  @map("parent_id")
+  level     Int      @default(1)
+  isActive  Boolean  @default(true) @map("is_active")
+  balance   Float    @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent        Account?       @relation("AccountParent", fields: [parentId], references: [id])
+  children      Account[]      @relation("AccountParent")
+  journalEntries JournalEntry[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("accounts")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Journal {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  number      String
+  date        DateTime
+  description String
+  reference   String?
+  source      String?
+  status      JournalStatus @default(DRAFT)
+  totalDebit  Float    @default(0) @map("total_debit")
+  totalCredit Float    @default(0) @map("total_credit")
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entries JournalEntry[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@index([date])
+  @@map("journals")
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+model JournalEntry {
+  id        String @id @default(cuid())
+  journalId String @map("journal_id")
+  accountId String @map("account_id")
+  debit     Float  @default(0)
+  credit    Float  @default(0)
+  description String?
+
+  journal Journal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@map("journal_entries")
+}
+
+// ==================== APPROVAL ====================
+model Approval {
+  id          String   @id @default(cuid())
+  companyId   String   @map("company_id")
+  module      String
+  referenceId String   @map("reference_id")
+  requesterId String   @map("requester_id")
+  approverId  String?  @map("approver_id")
+  status      ApprovalStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requester User    @relation("ApprovalRequester", fields: [requesterId], references: [id])
+  approver  User?   @relation("ApprovalApprover", fields: [approverId], references: [id])
+
+  purchaseRequest PurchaseRequest? @relation(fields: [referenceId], references: [id])
+
+  @@index([companyId])
+  @@index([module, referenceId])
+  @@map("approvals")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ==================== AUDIT LOG ====================
+model AuditLog {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  userId    String   @map("user_id")
+  module    String
+  action    String
+  referenceId String? @map("reference_id")
+  oldValues String?  @map("old_values") @db.Text
+  newValues String?  @map("new_values") @db.Text
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([module])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ==================== NOTIFICATION ====================
+model Notification {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false) @map("is_read")
+  link      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId, userId])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ==================== ATTACHMENTS ====================
+model Attachment {
+  id         String   @id @default(cuid())
+  companyId  String   @map("company_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  docType    String   @map("doc_type")
+  fileUrl    String   @map("file_url")
+  fileName   String   @map("file_name")
+  uploadedBy String?  @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [uploadedBy], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, entityType, entityId])
+  @@map("attachments")
+}
