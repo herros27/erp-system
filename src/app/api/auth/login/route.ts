@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     }
 
     // Use default company or first
-    const defaultCompany = user.userCompanies.find(uc => uc.isDefault) || user.userCompanies[0]
+    const defaultCompany = user.userCompanies.find((uc: any) => uc.isDefault) || user.userCompanies[0]
     const activeCompanyId = defaultCompany.company.id
 
     const permissions = await getUserPermissions(user.id, activeCompanyId)
