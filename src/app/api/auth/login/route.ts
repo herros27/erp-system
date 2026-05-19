@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           name: defaultCompany.role.name,
           displayName: defaultCompany.role.displayName,
         },
-        companies: user.userCompanies.map(uc => ({
+        companies: user.userCompanies.map((uc: any) => ({
           company: {
             id: uc.company.id,
             name: uc.company.name,
