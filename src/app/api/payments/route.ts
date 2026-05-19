@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
 
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Validasi Invoice
       const invoice = await tx.invoice.findUnique({
         where: { id: invoiceId }

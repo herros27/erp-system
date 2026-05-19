@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const count = await tx.goodsReceipt.count({ where: { companyId } })
       const number = generateNumber('GR', count + 1)
 
@@ -103,8 +103,8 @@ export async function POST(request: Request) {
       }
 
       const updatedItems = await tx.purchaseOrderItem.findMany({ where: { purchaseOrderId } })
-      const allReceived = updatedItems.every((i) => i.receivedQty >= i.quantity)
-      const anyReceived = updatedItems.some((i) => i.receivedQty > 0)
+      const allReceived = updatedItems.every((i: any) => i.receivedQty >= i.quantity)
+      const anyReceived = updatedItems.some((i: any) => i.receivedQty > 0)
 
       await tx.purchaseOrder.update({
         where: { id: purchaseOrderId },

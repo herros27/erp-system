@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       number = generateNumber('SJ', count + 1)
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Ambil SO untuk validasi
       const so = await tx.salesOrder.findUnique({
         where: { id: salesOrderId },

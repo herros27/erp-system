@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // STOCK IN
       if (type === 'IN' || type === 'PURCHASE_RECEIPT') {
         if (!warehouseId) throw new Error('Gudang tujuan wajib dipilih')

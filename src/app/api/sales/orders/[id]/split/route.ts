@@ -21,7 +21,7 @@ export async function POST(
   const { newNumber } = body
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Ambil data SO sumber beserta item-itemnya
       const so = await tx.salesOrder.findFirst({
         where: { id, companyId },
@@ -40,7 +40,7 @@ export async function POST(
 
       // 2. Filter item yang memiliki sisa outstanding (belum terkirim sepenuhnya)
       const outstandingItems = so.items.filter(
-        (item) => item.quantity - item.fulfilledQty > 0
+        (item: any) => item.quantity - item.fulfilledQty > 0
       )
 
       if (outstandingItems.length === 0) {
@@ -62,7 +62,7 @@ export async function POST(
       }
 
       // 4. Buat item data baru untuk SO Split
-      const newSOItemsData = outstandingItems.map((item) => {
+      const newSOItemsData = outstandingItems.map((item: any) => {
         const remainingQty = item.quantity - item.fulfilledQty
         return {
           productId: item.productId,
@@ -74,7 +74,7 @@ export async function POST(
         }
       })
 
-      const newSOSubtotal = newSOItemsData.reduce((sum, item) => sum + item.subtotal, 0)
+      const newSOSubtotal = newSOItemsData.reduce((sum: any, item: any) => sum + item.subtotal, 0)
       const newSOTax = newSOSubtotal * 0.11
       const newSOTotal = newSOSubtotal + newSOTax
 
@@ -92,7 +92,7 @@ export async function POST(
           status: 'CONFIRMED',
           createdBy: userId,
           items: {
-            create: newSOItemsData.map((item) => ({
+            create: newSOItemsData.map((item: any) => ({
               productId: item.productId,
               quantity: item.quantity,
               fulfilledQty: item.fulfilledQty,
@@ -125,9 +125,9 @@ export async function POST(
       }
 
       // 7. Hitung ulang total pada SO lama
-      const oldSOItemsUpdated = so.items.filter((item) => item.fulfilledQty > 0)
+      const oldSOItemsUpdated = so.items.filter((item: any) => item.fulfilledQty > 0)
       const oldSOSubtotal = oldSOItemsUpdated.reduce(
-        (sum, item) => sum + item.fulfilledQty * item.unitPrice,
+        (sum: any, item: any) => sum + item.fulfilledQty * item.unitPrice,
         0
       )
       const oldSOTax = oldSOSubtotal * 0.11
@@ -159,7 +159,7 @@ export async function POST(
 
         // Jika ada barang yang sudah dikirim, perbarui rincian dan nilai tagihan invoice lama
         if (oldSOItemsUpdated.length > 0) {
-          const oldSOShippedItems = oldSOItemsUpdated.map((item) => ({
+          const oldSOShippedItems = oldSOItemsUpdated.map((item: any) => ({
             productId: item.productId,
             quantity: item.fulfilledQty,
             unitPrice: item.unitPrice,
@@ -167,7 +167,7 @@ export async function POST(
           }))
 
           await tx.invoiceItem.createMany({
-            data: oldSOShippedItems.map((item) => ({
+            data: oldSOShippedItems.map((item: any) => ({
               invoiceId: unpaidInvoice.id,
               productId: item.productId,
               quantity: item.quantity,
@@ -176,7 +176,7 @@ export async function POST(
             }))
           })
 
-          const invSubtotal = oldSOShippedItems.reduce((sum, item) => sum + item.subtotal, 0)
+          const invSubtotal = oldSOShippedItems.reduce((sum: any, item: any) => sum + item.subtotal, 0)
           const invTax = invSubtotal * 0.11
           const invTotal = invSubtotal + invTax
 
@@ -224,7 +224,7 @@ export async function POST(
           createdBy: userId,
           status: 'UNPAID',
           items: {
-            create: newSOItemsData.map((item) => ({
+            create: newSOItemsData.map((item: any) => ({
               productId: item.productId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,

@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   if (!customerId || !items?.length) return errorResponse('Pelanggan dan item wajib diisi')
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Prevent double billing for the same Sales Order
       if (salesOrderId) {
         const existingInvoice = await tx.invoice.findFirst({

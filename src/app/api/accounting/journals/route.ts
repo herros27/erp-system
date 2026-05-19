@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   const number = generateNumber('JV', count + 1)
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const journal = await tx.journal.create({
         data: {
           companyId, number, date: new Date(date), description, reference, source,
