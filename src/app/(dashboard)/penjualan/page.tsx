@@ -13,6 +13,7 @@ import {
   Trash2,
   Printer,
   Truck,
+  Scissors,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,6 +28,9 @@ export default function PenjualanPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedSO, setSelectedSO] = useState<any>(null);
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+  const [splitSONumber, setSplitSONumber] = useState("");
+  const [isSplitting, setIsSplitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -36,6 +40,7 @@ export default function PenjualanPage() {
     customerId: "",
     orderDate: new Date().toISOString().split("T")[0],
     notes: "",
+    number: "",
   });
 
   const [items, setItems] = useState<
@@ -120,6 +125,7 @@ export default function PenjualanPage() {
       customerId: "",
       orderDate: new Date().toISOString().split("T")[0],
       notes: "",
+      number: "",
     });
     setItems([{ productId: "", quantity: 1, unitPrice: 0 }]);
     setIsModalOpen(true);
@@ -181,6 +187,37 @@ export default function PenjualanPage() {
       toast.error("Terjadi kesalahan");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSplitSO = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSO) return;
+    setIsSplitting(true);
+    try {
+      const res = await fetch(`/api/sales/orders/${selectedSO.id}/split`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-company-id": activeCompany?.id || "",
+        },
+        body: JSON.stringify({
+          newNumber: splitSONumber.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message);
+        setIsSplitModalOpen(false);
+        setIsDetailModalOpen(false);
+        fetchOrders(search, page);
+      } else {
+        toast.error(json.message);
+      }
+    } catch {
+      toast.error("Terjadi kesalahan saat memisahkan pesanan");
+    } finally {
+      setIsSplitting(false);
     }
   };
 
@@ -370,7 +407,7 @@ export default function PenjualanPage() {
 
             <form onSubmit={handleSubmit} className='space-y-6'>
               {/* Header Info */}
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
                 <div>
                   <label className='block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300'>
                     Pelanggan *
@@ -401,6 +438,20 @@ export default function PenjualanPage() {
                     value={formData.orderDate}
                     onChange={(e) =>
                       setFormData({ ...formData, orderDate: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300'>
+                    Nomor SO (Opsional)
+                  </label>
+                  <input
+                    type='text'
+                    className='input font-mono font-bold uppercase'
+                    placeholder='Otomatis'
+                    value={formData.number}
+                    onChange={(e) =>
+                      setFormData({ ...formData, number: e.target.value.toUpperCase() })
                     }
                   />
                 </div>
@@ -722,13 +773,89 @@ export default function PenjualanPage() {
               </div>
             </div>
 
-            <div className='flex justify-end mt-6'>
-              <button
-                className='btn btn-secondary'
-                onClick={() => setIsDetailModalOpen(false)}>
-                Tutup
-              </button>
+            <div className='flex justify-between items-center mt-6 border-t pt-4 dark:border-slate-700 w-full'>
+              <div>
+                {selectedSO.status !== "CANCELLED" &&
+                  selectedSO.status !== "COMPLETED" &&
+                  selectedSO.items?.some(
+                    (item: any) =>
+                      item.quantity - (item.fulfilledQty || 0) > 0,
+                  ) && (
+                    <button
+                      className='btn btn-secondary text-orange-600 border-orange-200 dark:border-orange-950/20 hover:bg-orange-50 dark:hover:bg-orange-950/20 font-bold flex items-center gap-1'
+                      onClick={() => {
+                        setSplitSONumber("");
+                        setIsSplitModalOpen(true);
+                      }}>
+                      <Scissors size={14} /> Split Sisa Pesanan
+                    </button>
+                  )}
+              </div>
+              <div className='flex gap-2'>
+                <button
+                  className='btn btn-secondary'
+                  onClick={() => setIsDetailModalOpen(false)}>
+                  Tutup
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isSplitModalOpen && selectedSO && (
+        <div
+          className='modal-overlay'
+          onClick={() => setIsSplitModalOpen(false)}
+          style={{ zIndex: 110 }}>
+          <div
+            className='modal-content max-w-md'
+            onClick={(e) => e.stopPropagation()}>
+            <h2 className='text-xl font-semibold mb-3 text-gray-800 dark:text-white'>
+              Split & Rollover Sisa Pesanan
+            </h2>
+            <p className='text-sm text-gray-600 dark:text-gray-400 mb-6'>
+              Tindakan ini akan memindahkan seluruh sisa barang outstanding
+              (belum dikirim) dari SO lama <strong>{selectedSO.number}</strong>{" "}
+              ke Sales Order baru. SO lama akan otomatis diubah statusnya
+              menjadi <strong>Selesai (Completed)</strong>.
+            </p>
+
+            <form onSubmit={handleSplitSO} className='space-y-4'>
+              <div>
+                <label className='block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300'>
+                  Nomor SO Baru (Opsional)
+                </label>
+                <input
+                  type='text'
+                  className='input font-mono font-bold uppercase w-full'
+                  placeholder='Otomatis'
+                  value={splitSONumber}
+                  onChange={(e) =>
+                    setSplitSONumber(e.target.value.toUpperCase())
+                  }
+                />
+                <span className='text-xs text-gray-400 mt-1 block'>
+                  Biarkan kosong untuk menggunakan nomor berurutan otomatis (contoh: 26005002)
+                </span>
+              </div>
+
+              <div className='flex justify-end gap-2 mt-6'>
+                <button
+                  type='button'
+                  className='btn btn-secondary'
+                  disabled={isSplitting}
+                  onClick={() => setIsSplitModalOpen(false)}>
+                  Batal
+                </button>
+                <button
+                  type='submit'
+                  className='btn btn-primary'
+                  disabled={isSplitting}>
+                  {isSplitting ? "Memproses..." : "Split Sekarang"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

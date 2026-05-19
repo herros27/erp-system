@@ -32,7 +32,8 @@ export default function InvoicePage() {
     salesOrderId: '',
     invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: '',
-    notes: ''
+    notes: '',
+    number: ''
   })
   
   const [items, setItems] = useState<Array<{productId: string, quantity: number, unitPrice: number}>>([
@@ -143,7 +144,8 @@ export default function InvoicePage() {
       salesOrderId: '',
       invoiceDate: today.toISOString().split('T')[0],
       dueDate: nextWeek.toISOString().split('T')[0], // Default due date is 7 days from now
-      notes: ''
+      notes: '',
+      number: ''
     })
     setItems([{ productId: '', quantity: 1, unitPrice: 0 }])
     setIsModalOpen(true)
@@ -269,7 +271,7 @@ export default function InvoicePage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Cari nomor invoice atau pelanggan..." 
+              placeholder="Cari nomor invoice, pelanggan, atau NO SO..." 
               className="input pl-10" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -413,6 +415,16 @@ export default function InvoicePage() {
                     required
                     value={formData.dueDate}
                     onChange={e => setFormData({...formData, dueDate: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nomor Invoice (Opsional)</label>
+                  <input 
+                    type="text" 
+                    className="input font-mono font-bold uppercase" 
+                    placeholder="Otomatis"
+                    value={formData.number}
+                    onChange={e => setFormData({...formData, number: e.target.value.toUpperCase()})}
                   />
                 </div>
                 <div>

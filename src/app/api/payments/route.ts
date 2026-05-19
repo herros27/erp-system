@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     if (!companyId) return errorResponse('Perusahaan tidak dipilih', 400)
 
     const body = await request.json()
-    const { invoiceId, paymentDate, amount, method, notes, attachments } = body
+    const { invoiceId, paymentDate, amount, method, notes, attachments, number: manualNumber } = body
 
     if (!invoiceId || !amount || !method) {
       return errorResponse('Invoice, Nominal, dan Metode Pembayaran wajib diisi', 400)
@@ -56,12 +56,22 @@ export async function POST(request: Request) {
       throw new Error('Database schema belum dimuat. Tolong restart server (npm run dev) Anda.')
     }
 
-    const count = await prisma.payment.count({ where: { companyId } })
-    const number = generateNumber('PAY', count + 1)
+    let number = manualNumber
+    if (manualNumber) {
+      const existing = await prisma.payment.findFirst({
+        where: { number: manualNumber, companyId }
+      })
+      if (existing) {
+        return errorResponse('Nomor Kwitansi Pembayaran sudah digunakan', 400)
+      }
+    } else {
+      const count = await prisma.payment.count({ where: { companyId } })
+      number = generateNumber('PAY', count + 1)
+    }
 
 
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Validasi Invoice
       const invoice = await tx.invoice.findUnique({
         where: { id: invoiceId }

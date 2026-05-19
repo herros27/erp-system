@@ -21,7 +21,7 @@ export async function PATCH(
   const { status, attachments } = body
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Find and check Sales Order
       const so = await tx.salesOrder.findFirst({
         where: { id, companyId }

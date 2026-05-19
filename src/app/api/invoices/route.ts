@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     ...(search ? { 
       OR: [
         { number: { contains: search, mode: 'insensitive' as const } }, 
-        { customer: { name: { contains: search, mode: 'insensitive' as const } } }
+        { customer: { name: { contains: search, mode: 'insensitive' as const } } },
+        { salesOrder: { number: { contains: search, mode: 'insensitive' as const } } }
       ] 
     } : {}),
   }
@@ -47,12 +48,12 @@ export async function POST(request: Request) {
   if (!companyId) return errorResponse('Perusahaan tidak dipilih', 400)
   
   const body = await request.json()
-  const { customerId, salesOrderId, invoiceDate, dueDate, notes, items } = body
+  const { customerId, salesOrderId, invoiceDate, dueDate, notes, items, number: manualNumber } = body
   
   if (!customerId || !items?.length) return errorResponse('Pelanggan dan item wajib diisi')
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Prevent double billing for the same Sales Order
       if (salesOrderId) {
         const existingInvoice = await tx.invoice.findFirst({
@@ -67,8 +68,18 @@ export async function POST(request: Request) {
         }
       }
 
-      const count = await tx.invoice.count({ where: { companyId } })
-      const number = generateNumber('INV', count + 1)
+      let number = manualNumber
+      if (manualNumber) {
+        const existingInvoice = await tx.invoice.findFirst({
+          where: { number: manualNumber, companyId }
+        })
+        if (existingInvoice) {
+          throw new Error('Nomor Invoice sudah digunakan')
+        }
+      } else {
+        const count = await tx.invoice.count({ where: { companyId } })
+        number = generateNumber('INV', count + 1)
+      }
 
       let subtotal = 0
       const itemsData = items.map((item: any) => {

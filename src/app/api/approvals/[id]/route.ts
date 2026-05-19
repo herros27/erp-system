@@ -19,7 +19,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   })
   if (!approval) return notFoundResponse('Persetujuan tidak ditemukan atau sudah diproses')
 
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx: any) => {
     const appr = await tx.approval.update({
       where: { id },
       data: { status, approverId: userId, notes },
