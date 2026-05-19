@@ -252,7 +252,7 @@ export function Header() {
             <Bell size={18} />
             {unreadCount > 0 && (
               <span
-                className='absolute top-1 right-1 min-w-[8px] h-2 px-0.5 rounded-full text-[9px] flex items-center justify-center text-white'
+                className='absolute top-1 right-1 min-w-2 h-2 px-0.5 rounded-full text-[9px] flex items-center justify-center text-white'
                 style={{ background: "#000000" }}>
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
@@ -262,7 +262,7 @@ export function Header() {
             <div
               className='
         absolute top-full right-0 mt-3
-  w-96 max-h-[32rem]
+  w-96 max-h-128
 
   rounded-3xl
   border border-zinc-200

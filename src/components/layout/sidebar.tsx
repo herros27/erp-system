@@ -191,7 +191,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen z-30 flex flex-col transition-all duration-300 bg-zinc-950  rounded-r-[32px] overflow-hidden`}
+      className={`fixed top-0 left-0 h-screen z-30 flex flex-col transition-all duration-300 bg-zinc-950  rounded-r-4xl overflow-hidden`}
       style={{
         width: isCollapsed
           ? "var(--sidebar-collapsed)"
@@ -264,15 +264,14 @@ export function Sidebar() {
                                   }`
                             }`}
                         title={renderCollapsed ? item.label : undefined}>
-                        
                         {/* Absolute Animated Background from Right to Left */}
                         {isActive && (
-                          <div 
+                          <div
                             className={`absolute inset-0 bg-[#F4F4F7] z-0 ${
-                              renderCollapsed 
-                                ? "rounded-2xl" 
+                              renderCollapsed
+                                ? "rounded-2xl"
                                 : "rounded-l-full rounded-r-none animate-slide-in-right-left"
-                            }`} 
+                            }`}
                           />
                         )}
 
