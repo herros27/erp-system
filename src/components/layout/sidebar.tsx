@@ -310,11 +310,11 @@ export function Sidebar() {
         style={{ borderTop: "1px solid #18181b" }}>
         <button
           onClick={toggle}
-          className='w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-900/40 transition-colors duration-200'>
+          className='w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-900/40 transition-colors duration-200 group'>
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={16} />}
           {!isCollapsed && (
-            <span className='text-xs font-semibold tracking-wide'>
-              Ciutkan Menu
+            <span className='text-xs font-bold tracking-wider uppercase text-zinc-400 group-hover:text-white transition-colors duration-200'>
+              Mode Fokus
             </span>
           )}
         </button>
