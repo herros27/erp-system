@@ -41,10 +41,17 @@ export function parseRupiah(value: string): number {
 
 export function generateNumber(prefix: string, sequence: number): string {
   const date = new Date()
-  const year = date.getFullYear()
+  const fullYear = date.getFullYear()
+  const yearTwoDigits = String(fullYear).slice(-2)
   const month = String(date.getMonth() + 1).padStart(2, '0')
+  
+  if (['SO', 'SJ', 'INV', 'PO', 'PAY'].includes(prefix)) {
+    const seq = String(sequence).padStart(3, '0')
+    return `${prefix}${yearTwoDigits}0${month}${seq}`
+  }
+  
   const seq = String(sequence).padStart(4, '0')
-  return `${prefix}/${year}${month}/${seq}`
+  return `${prefix}/${fullYear}${month}/${seq}`
 }
 
 export function cn(...classes: (string | undefined | false | null)[]): string {

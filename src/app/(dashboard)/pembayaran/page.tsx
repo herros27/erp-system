@@ -516,41 +516,41 @@ export default function PembayaranPage() {
       {/* MODAL TERIMA PEMBAYARAN / EDIT */}
       {isModalOpen && (
         <div
-          className='fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-950/40 backdrop-blur-md transition-opacity'
+          className='fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-zinc-950/60 backdrop-blur-md transition-opacity'
           onClick={() => !isSubmitting && setIsModalOpen(false)}>
           <div
-            className='bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border border-zinc-100 dark:border-zinc-800'
+            className='bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col border border-zinc-150 dark:border-zinc-800'
             onClick={(e) => e.stopPropagation()}>
+            
             {/* MODAL HEADER */}
-            <div className='bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800/80 px-8 md:px-12 py-6 flex items-center justify-between shrink-0'>
-              <h2 className='text-2xl font-extrabold text-zinc-950 dark:text-white flex items-center gap-4'>
-                <div className='p-2.5 bg-zinc-100 dark:bg-zinc-850 rounded-xl text-zinc-900 dark:text-white'>
-                  <Receipt size={24} />
+            <div className='bg-zinc-50/50 dark:bg-zinc-950/50 border-b border-zinc-100 dark:border-zinc-800/80 px-8 py-6 flex items-center justify-between shrink-0 select-none'>
+              <h2 className='text-xl font-black text-zinc-900 dark:text-white flex items-center gap-3'>
+                <div className='p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl'>
+                  <Receipt size={20} />
                 </div>
-                {editMode
-                  ? "Edit Pembayaran Masuk"
-                  : "Penerimaan Pembayaran Baru"}
+                {editMode ? "Koreksi Catatan Pembayaran" : "Penerimaan Pembayaran Baru"}
               </h2>
               <button
                 type='button'
                 onClick={() => !isSubmitting && setIsModalOpen(false)}
-                className='p-3 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 rounded-xl transition-colors'>
-                <X size={20} />
+                className='p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all'>
+                <X size={18} />
               </button>
             </div>
 
             <form
               onSubmit={handleSubmit}
               className='flex-1 overflow-y-auto flex flex-col'>
-              <div className='p-8 md:p-12 space-y-8 md:space-y-10 flex-1'>
-                {/* SECTION: INFO INVOICE */}
-                <div className='space-y-3'>
-                  <label className='block text-base font-bold text-zinc-800 dark:text-zinc-200'>
-                    Pilih Invoice (Belum Lunas){" "}
-                    <span className='text-zinc-400'>*</span>
+              
+              <div className='p-8 md:p-10 space-y-7 flex-1 overflow-y-auto'>
+                
+                {/* SECTION 1: INVOICE SELECTION */}
+                <div className='space-y-2'>
+                  <label className='block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none'>
+                    Pilih Invoice (Belum Lunas) <span className='text-red-500'>*</span>
                   </label>
                   <select
-                    className='w-full px-5 py-4 text-base bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-4 focus:ring-zinc-950/5 focus:border-zinc-950 dark:focus:ring-zinc-200/10 dark:focus:border-zinc-200 transition-all outline-none text-zinc-800 dark:text-zinc-100 cursor-pointer font-medium'
+                    className='w-full px-4 py-3 bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl transition-all outline-none text-zinc-800 dark:text-zinc-100 font-bold text-xs select-none cursor-pointer focus:ring-2 focus:ring-blue-500/20'
                     required
                     disabled={editMode}
                     value={selectedInvoiceId}
@@ -560,23 +560,22 @@ export default function PembayaranPage() {
                       const remaining = inv.total - (inv.paidAmount || 0);
                       return (
                         <option key={inv.id} value={inv.id}>
-                          {inv.number} - {inv.customer.name} (Sisa:{" "}
-                          {formatRupiah(remaining)})
+                          {inv.number} - {inv.customer.name} (Sisa: {formatRupiah(remaining)})
                         </option>
                       );
                     })}
                   </select>
                 </div>
 
-                {/* SECTION: TANGGAL & METODE */}
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-8'>
-                  <div className='space-y-3'>
-                    <label className='block text-base font-bold text-zinc-800 dark:text-zinc-200'>
-                      Tanggal Terima <span className='text-zinc-400'>*</span>
+                {/* SECTION 2: DATE & PAYMENT METHOD */}
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                  <div className='space-y-2'>
+                    <label className='block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none'>
+                      Tanggal Terima <span className='text-red-500'>*</span>
                     </label>
                     <input
                       type='date'
-                      className='w-full px-5 py-4 text-base bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-4 focus:ring-zinc-950/5 focus:border-zinc-950 dark:focus:ring-zinc-200/10 dark:focus:border-zinc-200 transition-all outline-none text-zinc-800 dark:text-zinc-100 font-medium'
+                      className='w-full px-4 py-3 bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl transition-all outline-none text-zinc-800 dark:text-zinc-100 font-bold text-xs focus:ring-2 focus:ring-blue-500/20'
                       required
                       value={formData.paymentDate}
                       onChange={(e) =>
@@ -587,12 +586,13 @@ export default function PembayaranPage() {
                       }
                     />
                   </div>
-                  <div className='space-y-3'>
-                    <label className='block text-base font-bold text-zinc-800 dark:text-zinc-200'>
-                      Metode Pembayaran <span className='text-zinc-400'>*</span>
+                  
+                  <div className='space-y-2'>
+                    <label className='block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none'>
+                      Metode Pembayaran <span className='text-red-500'>*</span>
                     </label>
                     <select
-                      className='w-full px-5 py-4 text-base bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-4 focus:ring-zinc-950/5 focus:border-zinc-950 dark:focus:ring-zinc-200/10 dark:focus:border-zinc-200 transition-all outline-none text-zinc-800 dark:text-zinc-100 cursor-pointer font-medium'
+                      className='w-full px-4 py-3 bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl transition-all outline-none text-zinc-800 dark:text-zinc-100 font-bold text-xs cursor-pointer focus:ring-2 focus:ring-blue-500/20'
                       required
                       value={formData.method}
                       onChange={(e) =>
@@ -606,18 +606,18 @@ export default function PembayaranPage() {
                   </div>
                 </div>
 
-                {/* SECTION: HIGHLIGHT NOMINAL */}
-                <div className='p-8 bg-zinc-50/50 dark:bg-zinc-950/50 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 space-y-4'>
-                  <label className='block text-base font-bold text-zinc-800 dark:text-zinc-200'>
-                    Nominal Diterima <span className='text-zinc-400'>*</span>
+                {/* SECTION 3: NOMINAL DISPLAY (SPACIOUS & BEAUTIFUL) */}
+                <div className='p-6 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-2xl space-y-3 shadow-inner'>
+                  <label className='block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none'>
+                    Nominal Diterima <span className='text-red-500'>*</span>
                   </label>
-                  <div className='flex rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 focus-within:ring-4 focus-within:ring-zinc-950/5 focus-within:border-zinc-950 dark:focus-within:ring-zinc-200/10 dark:focus-within:border-zinc-200 transition-all'>
-                    <span className='flex items-center px-6 bg-zinc-100 dark:bg-zinc-800 border-r border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-extrabold text-xl select-none'>
+                  <div className='flex rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-sm'>
+                    <span className='flex items-center px-4 bg-zinc-100 dark:bg-zinc-850 border-r border-zinc-200 dark:border-zinc-800 text-zinc-400 font-black text-sm select-none'>
                       Rp
                     </span>
                     <input
                       type='number'
-                      className='w-full px-6 py-5 bg-white dark:bg-zinc-900 outline-none text-3xl font-extrabold text-zinc-950 dark:text-white disabled:opacity-60 disabled:bg-zinc-50'
+                      className='w-full px-4 py-3.5 bg-white dark:bg-zinc-900 outline-none text-2xl font-black text-zinc-950 dark:text-white disabled:opacity-60'
                       required
                       min='1'
                       disabled={editMode}
@@ -628,21 +628,21 @@ export default function PembayaranPage() {
                       }
                     />
                   </div>
-                  <p className='text-xs font-semibold text-zinc-400 flex items-center gap-2 mt-2'>
+                  <p className='text-[10px] font-bold text-zinc-400 italic select-none'>
                     {editMode
-                      ? "Nominal tidak dapat diubah pada mode edit."
-                      : "Pastikan nominal sesuai dengan mutasi bank atau uang fisik yang diterima."}
+                      ? "* Nominal dana tidak dapat diedit langsung demi integritas data."
+                      : "* Pastikan nominal sesuai dengan mutasi bank atau uang fisik yang diterima."}
                   </p>
                 </div>
 
-                {/* SECTION: CATATAN */}
-                <div className='space-y-3'>
-                  <label className='block text-base font-bold text-zinc-800 dark:text-zinc-200'>
+                {/* SECTION 4: NOTES */}
+                <div className='space-y-2'>
+                  <label className='block text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest select-none'>
                     Catatan Referensi
                   </label>
                   <input
                     type='text'
-                    className='w-full px-5 py-4 text-base bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-4 focus:ring-zinc-950/5 focus:border-zinc-950 dark:focus:ring-zinc-200/10 dark:focus:border-zinc-200 transition-all outline-none text-zinc-800 dark:text-zinc-100 font-medium'
+                    className='w-full px-4 py-3 bg-zinc-50 hover:bg-zinc-100/50 focus:bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl transition-all outline-none text-zinc-800 dark:text-zinc-100 font-bold text-xs focus:ring-2 focus:ring-blue-500/20'
                     placeholder='Misal: Nomor Ref BCA / Diterima oleh staf A'
                     value={formData.notes}
                     onChange={(e) =>
@@ -651,18 +651,18 @@ export default function PembayaranPage() {
                   />
                 </div>
 
-                {/* SECTION: ATTACHMENTS */}
-                <div className='space-y-5 pt-4'>
-                  <div className='flex items-center justify-between'>
+                {/* SECTION 5: ATTACHMENTS (8 SPECIFIC DOCS CARDS - COMPACT & SPACIOUS) */}
+                <div className='space-y-4 pt-4'>
+                  <div className='flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-2 select-none'>
                     <div>
-                      <h3 className='text-lg font-bold text-zinc-950 dark:text-white'>
+                      <h3 className='text-sm font-black text-zinc-900 dark:text-white'>
                         Dokumen Pelengkap
                       </h3>
-                      <p className='text-sm text-zinc-500 dark:text-zinc-400 mt-1 font-medium'>
-                        Opsional. Unggah bukti transaksi.
+                      <p className='text-[10px] text-zinc-450 font-bold uppercase tracking-wider mt-0.5'>
+                        Unggah bukti transaksi pendukung jika ada (Maks. 5MB)
                       </p>
                     </div>
-                    <span className='px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-full text-xs font-bold'>
+                    <span className='px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-extrabold'>
                       {attachments.length} Terunggah
                     </span>
                   </div>
@@ -677,27 +677,29 @@ export default function PembayaranPage() {
                       return (
                         <div
                           key={docType}
-                          className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${
+                          className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                             existingAtt
-                              ? "bg-zinc-50 border-zinc-300 dark:bg-zinc-900/40 dark:border-zinc-800"
-                              : "bg-white border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800"
+                              ? "bg-zinc-50/50 border-zinc-300 dark:bg-zinc-900/30 dark:border-zinc-800 shadow-sm"
+                              : "bg-white border-zinc-200 hover:border-zinc-300/80 dark:bg-zinc-900 dark:border-zinc-850 hover:bg-zinc-50/30"
                           }`}>
-                          <div className='flex items-center gap-4 overflow-hidden'>
+                          
+                          <div className='flex items-center gap-3 overflow-hidden'>
                             <div
-                              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                                 existingAtt
-                                  ? "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                                  ? "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm"
+                                  : "bg-zinc-100 text-zinc-400 dark:bg-zinc-850 dark:text-zinc-500"
                               }`}>
                               {existingAtt ? (
-                                <CheckCircle2 size={20} />
+                                <CheckCircle2 size={16} />
                               ) : (
-                                <FileUp size={20} />
+                                <FileUp size={16} />
                               )}
                             </div>
-                            <div className='overflow-hidden'>
+                            
+                            <div className='overflow-hidden space-y-0.5'>
                               <p
-                                className={`text-sm font-bold truncate ${
+                                className={`text-xs font-extrabold truncate ${
                                   existingAtt ? "text-zinc-950 dark:text-white" : "text-zinc-700 dark:text-zinc-300"
                                 }`}>
                                 {docType}
@@ -707,8 +709,8 @@ export default function PembayaranPage() {
                                   href={existingAtt.fileUrl}
                                   target='_blank'
                                   rel='noreferrer'
-                                  className='text-xs text-zinc-900 dark:text-white font-bold hover:underline flex items-center gap-1 mt-1'>
-                                  Lihat File <ExternalLink size={12} />
+                                  className='text-[10px] text-zinc-500 dark:text-zinc-400 font-bold hover:underline inline-flex items-center gap-0.5'>
+                                  Lihat File <ExternalLink size={9} />
                                 </a>
                               )}
                             </div>
@@ -719,16 +721,14 @@ export default function PembayaranPage() {
                               <button
                                 type='button'
                                 onClick={() => removeAttachment(docType)}
-                                className='text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 p-2.5 rounded-xl transition-all'
+                                className='text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 p-2 rounded-xl transition-all'
                                 title='Hapus Lampiran'>
-                                <Trash2 size={18} />
+                                <Trash2 size={16} />
                               </button>
                             ) : (
                               <label
-                                className={`cursor-pointer px-4 py-2 bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 ${
-                                  isUploadingThis
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
+                                className={`cursor-pointer px-5 py-2.5 bg-zinc-950 hover:bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center shrink-0 min-w-[85px] text-center select-none ${
+                                  isUploadingThis ? "opacity-50 cursor-not-allowed" : ""
                                 }`}>
                                 {isUploadingThis ? "Proses..." : "Upload"}
                                 <input
@@ -738,42 +738,43 @@ export default function PembayaranPage() {
                                   onChange={(e) =>
                                     handleSpecificFileUpload(e, docType)
                                   }
-                                  disabled={
-                                    isUploadingThis || uploadingType !== null
-                                  }
+                                  disabled={isUploadingThis || uploadingType !== null}
                                 />
                               </label>
                             )}
                           </div>
+
                         </div>
                       );
                     })}
                   </div>
                 </div>
+
               </div>
 
-              {/* STICKY FOOTER ACTION BUTTONS */}
-              <div className='sticky bottom-0 z-20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-8 md:px-12 py-5 border-t border-zinc-100 dark:border-zinc-800/80 flex justify-end gap-4 shrink-0'>
+              {/* STICKY FOOTER ACTIONS */}
+              <div className='sticky bottom-0 z-20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-8 py-5 border-t border-zinc-100 dark:border-zinc-800/80 flex justify-end gap-3 shrink-0 select-none'>
                 <button
                   type='button'
-                  className='px-6 py-3 text-sm font-semibold text-zinc-700 bg-white border border-zinc-200 rounded-xl hover:bg-zinc-50 hover:text-zinc-950 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 transition-all shadow-sm'
+                  className='btn btn-secondary px-5 py-2 text-xs font-bold rounded-xl'
                   onClick={() => setIsModalOpen(false)}>
                   Batal
                 </button>
                 <button
                   type='submit'
-                  className='px-8 py-3 text-sm font-semibold text-white bg-zinc-950 border border-transparent rounded-xl hover:bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2'
+                  className='btn btn-primary px-6 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm'
                   disabled={isSubmitting || uploadingType !== null}>
                   {isSubmitting ? (
                     <>
-                      <div className='w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin'></div>
-                      Menyimpan...
+                      <div className='w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin'></div>
+                      <span>Menyimpan...</span>
                     </>
                   ) : (
-                    "Simpan Pembayaran"
+                    <span>Simpan Pembayaran</span>
                   )}
                 </button>
               </div>
+
             </form>
           </div>
         </div>

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     if (!companyId) return errorResponse('Perusahaan tidak dipilih', 400)
     
     const body = await request.json()
-    const { salesOrderId, deliveryDate, driverName, licensePlate, notes, items } = body
+    const { salesOrderId, deliveryDate, driverName, licensePlate, notes, items, number: manualNumber } = body
     
     if (!salesOrderId || !items?.length) {
       return errorResponse('Sales Order dan item wajib diisi')
@@ -59,8 +59,18 @@ export async function POST(request: Request) {
       throw new Error('Database schema belum dimuat. Tolong restart server (npm run dev) Anda.')
     }
 
-    const count = await prisma.deliveryOrder.count({ where: { companyId } })
-    const number = generateNumber('SJ', count + 1)
+    let number = manualNumber
+    if (manualNumber) {
+      const existing = await prisma.deliveryOrder.findFirst({
+        where: { number: manualNumber, companyId }
+      })
+      if (existing) {
+        return errorResponse('Nomor Surat Jalan sudah digunakan')
+      }
+    } else {
+      const count = await prisma.deliveryOrder.count({ where: { companyId } })
+      number = generateNumber('SJ', count + 1)
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Ambil SO untuk validasi

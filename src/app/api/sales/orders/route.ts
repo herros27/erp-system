@@ -39,11 +39,21 @@ export async function POST(request: Request) {
   const userId = request.headers.get('x-user-id')
   if (!companyId) return errorResponse('Perusahaan tidak dipilih', 400)
   const body = await request.json()
-  const { customerId, orderDate, notes, items, attachments } = body
+  const { customerId, orderDate, notes, items, attachments, number: manualNumber } = body
   if (!customerId || !items?.length) return errorResponse('Pelanggan dan item wajib diisi')
 
-  const count = await prisma.salesOrder.count({ where: { companyId } })
-  const number = generateNumber('SO', count + 1)
+  let number = manualNumber
+  if (manualNumber) {
+    const existing = await prisma.salesOrder.findFirst({
+      where: { number: manualNumber, companyId }
+    })
+    if (existing) {
+      return errorResponse('Nomor Sales Order sudah digunakan')
+    }
+  } else {
+    const count = await prisma.salesOrder.count({ where: { companyId } })
+    number = generateNumber('SO', count + 1)
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {

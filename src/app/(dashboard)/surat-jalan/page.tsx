@@ -30,6 +30,7 @@ export default function SuratJalanPage() {
     driverName: "",
     licensePlate: "",
     notes: "",
+    number: "",
   });
   const [deliveryItems, setDeliveryItems] = useState<any>({}); // { productId: qtyToDeliver }
 
@@ -109,6 +110,7 @@ export default function SuratJalanPage() {
       driverName: "",
       licensePlate: "",
       notes: "",
+      number: "",
     });
     setIsModalOpen(true);
   };
@@ -373,7 +375,7 @@ export default function SuratJalanPage() {
                 </div>
               </div>
 
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
                 <div>
                   <label className='block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300'>
                     Nama Supir / Kurir
@@ -399,6 +401,20 @@ export default function SuratJalanPage() {
                     value={formData.licensePlate}
                     onChange={(e) =>
                       setFormData({ ...formData, licensePlate: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300'>
+                    Nomor SJ (Opsional)
+                  </label>
+                  <input
+                    type='text'
+                    className='input font-mono font-bold uppercase'
+                    placeholder='Otomatis'
+                    value={formData.number}
+                    onChange={(e) =>
+                      setFormData({ ...formData, number: e.target.value.toUpperCase() })
                     }
                   />
                 </div>
