@@ -63,7 +63,18 @@ export async function GET(request: Request) {
   if (type === 'sales') {
     const orders = await prisma.salesOrder.findMany({
       where: { companyId, orderDate: { gte: dateFrom, lte: dateTo } },
-      include: { customer: { select: { name: true } } },
+      include: {
+        customer: {
+          select: {
+            name: true,
+            parent: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      },
       orderBy: { orderDate: 'desc' },
     })
     return successResponse(orders)

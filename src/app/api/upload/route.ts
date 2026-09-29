@@ -2,14 +2,16 @@ import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { errorResponse, successResponse } from "@/lib/api-response";
 
-// Initialize Supabase Client with Service Role Key for server-side operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return errorResponse("Konfigurasi Supabase Storage (.env) belum lengkap.", 500);
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 

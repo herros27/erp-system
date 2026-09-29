@@ -3,10 +3,46 @@
 import { useState, useEffect } from "react";
 import { useCompanyStore } from "@/stores/company-store";
 import { formatRupiah, formatDate } from "@/lib/utils";
-import { FileText, Download, BarChart3 } from "lucide-react";
+import {
+  FileText,
+  Download,
+  BarChart3,
+  Search,
+  Wallet,
+  Receipt,
+  SlidersHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type Tab = "summary" | "sales" | "purchases" | "stock";
+
+const formatIndoDate = (dateInput: any) => {
+  if (!dateInput) return "-";
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    const day = d.getDate();
+    const months = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch {
+    return String(dateInput);
+  }
+};
 
 function downloadCsv(filename: string, rows: string[][]) {
   const csv = rows
@@ -29,18 +65,71 @@ export default function LaporanPage() {
   const [to, setTo] = useState(new Date().toISOString().split("T")[0]);
   const [data, setData] = useState<any>(null);
 
+  // New states for sales report dashboard
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString(),
+  ); // Default to current year for clean initial view
+  const [selectedCustomer, setSelectedCustomer] = useState("all");
+  const [customers, setCustomers] = useState<any[]>([]);
+
+  // Dynamically calculate date period based on active tab and dropdown filters
+  const getPeriodRange = () => {
+    if (tab !== "sales") {
+      return { fromDate: from, toDate: to };
+    }
+
+    let fromDate = `${new Date().getFullYear()}-01-01`;
+    let toDate = new Date().toISOString().split("T")[0];
+
+    if (selectedYear !== "all") {
+      const year = parseInt(selectedYear);
+      if (selectedMonth !== "all") {
+        const month = parseInt(selectedMonth);
+        const lastDay = new Date(year, month, 0).getDate();
+        fromDate = `${year}-${String(month).padStart(2, "0")}-01`;
+        toDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      } else {
+        fromDate = `${year}-01-01`;
+        toDate = `${year}-12-31`;
+      }
+    } else {
+      // If year is "all", query a wide range
+      fromDate = "2020-01-01";
+      toDate = "2099-12-31";
+    }
+    return { fromDate, toDate };
+  };
+
   useEffect(() => {
     if (!activeCompany) return;
     fetchReport();
-  }, [activeCompany, tab, from, to]);
+  }, [activeCompany, tab, from, to, selectedMonth, selectedYear]);
+
+  // Load all customers for the dropdown menu
+  useEffect(() => {
+    if (!activeCompany) return;
+    const fetchCustomers = async () => {
+      try {
+        const res = await fetch("/api/customers?all=true");
+        const json = await res.json();
+        if (json.success) setCustomers(json.data);
+      } catch (err) {
+        console.error("Gagal memuat list customer", err);
+      }
+    };
+    fetchCustomers();
+  }, [activeCompany]);
 
   const fetchReport = async () => {
     setLoading(true);
     try {
+      const { fromDate, toDate } = getPeriodRange();
       const url = new URL("/api/reports", window.location.origin);
       url.searchParams.set("type", tab === "summary" ? "summary" : tab);
-      url.searchParams.set("from", from);
-      url.searchParams.set("to", to);
+      url.searchParams.set("from", fromDate);
+      url.searchParams.set("to", toDate);
       const res = await fetch(url.toString());
       const json = await res.json();
       if (json.success) setData(json.data);
@@ -51,6 +140,67 @@ export default function LaporanPage() {
       setLoading(false);
     }
   };
+
+  // client-side filtering for sales orders
+  const filteredSalesOrders =
+    Array.isArray(data) && tab === "sales"
+      ? data.filter((item: any) => {
+          const matchSearch = searchQuery
+            ? item.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (item.customer?.name &&
+                item.customer.name
+                  .toLowerCase()
+                  .includes(searchQuery.toLowerCase()))
+            : true;
+
+          const orderDate = new Date(item.orderDate);
+          const matchMonth =
+            selectedMonth !== "all"
+              ? (orderDate.getMonth() + 1).toString().padStart(2, "0") ===
+                selectedMonth
+              : true;
+
+          const matchYear =
+            selectedYear !== "all"
+              ? orderDate.getFullYear().toString() === selectedYear
+              : true;
+
+          const matchCustomer =
+            selectedCustomer !== "all"
+              ? item.customerId === selectedCustomer
+              : true;
+
+          return matchSearch && matchMonth && matchYear && matchCustomer;
+        })
+      : [];
+
+  const totalOmset = filteredSalesOrders.reduce(
+    (sum: number, order: any) => sum + (order.total || 0),
+    0,
+  );
+  const totalTransaksi = filteredSalesOrders.length;
+  const rataRataTransaksi =
+    totalTransaksi > 0 ? totalOmset / totalTransaksi : 0;
+
+  const currentYearVal = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) =>
+    (currentYearVal - i).toString(),
+  );
+
+  const months = [
+    { value: "01", label: "Januari" },
+    { value: "02", label: "Februari" },
+    { value: "03", label: "Maret" },
+    { value: "04", label: "April" },
+    { value: "05", label: "Mei" },
+    { value: "06", label: "Juni" },
+    { value: "07", label: "Juli" },
+    { value: "08", label: "Agustus" },
+    { value: "09", label: "September" },
+    { value: "10", label: "Oktober" },
+    { value: "11", label: "November" },
+    { value: "12", label: "Desember" },
+  ];
 
   const handleExport = () => {
     if (!data) return;
@@ -64,14 +214,15 @@ export default function LaporanPage() {
         ["Estimasi Laba", String(data.profitEstimate || 0)],
       ]);
     } else if (tab === "sales") {
-      downloadCsv("laporan-penjualan.csv", [
-        ["No SO", "Pelanggan", "Tanggal", "Total", "Status"],
-        ...data.map((o: any) => [
+      downloadCsv("laporan-penjualan-omset.csv", [
+        ["No. SO", "Tanggal", "Customer", "DPP", "PPN", "Total"],
+        ...filteredSalesOrders.map((o: any) => [
           o.number,
-          o.customer?.name,
           formatDate(o.orderDate),
-          o.total,
-          o.status,
+          o.customer?.name || "-",
+          o.subtotal || 0,
+          o.tax || 0,
+          o.total || 0,
         ]),
       ]);
     } else if (tab === "purchases") {
@@ -107,8 +258,25 @@ export default function LaporanPage() {
     { id: "stock", label: "Stok" },
   ];
 
+  const getHeaderInfo = () => {
+    if (tab === "sales") {
+      return {
+        title: "Laporan Penjualan (Omset)",
+        subtitle:
+          "Pantau ringkasan omset penjualan, total transaksi, dan filter berdasarkan bulan, tahun, atau customer.",
+      };
+    }
+    return {
+      title: "Laporan Bisnis",
+      subtitle:
+        "Analisis metrik keuangan, inventori, dan ekspor data transaksi",
+    };
+  };
+
+  const headerInfo = getHeaderInfo();
+
   return (
-    <div className='space-y-8 animate-in fade-in duration-300'>
+    <div className='flex flex-col gap-6 lg:gap-8 animate-in fade-in duration-300'>
       {/* HEADER SECTION */}
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
         <div>
@@ -117,10 +285,10 @@ export default function LaporanPage() {
               size={28}
               className='text-zinc-900 dark:text-zinc-100 shrink-0'
             />
-            Laporan Bisnis
+            {headerInfo.title}
           </h1>
           <p className='text-sm mt-1 text-zinc-500 dark:text-zinc-400 font-medium'>
-            Analisis metrik keuangan, inventori, dan ekspor data transaksi
+            {headerInfo.subtitle}
           </p>
         </div>
         <button
@@ -133,56 +301,64 @@ export default function LaporanPage() {
       </div>
 
       {/* CONTROLS SECTION */}
-      <div className='flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl shadow-sm'>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
         {/* VIEW TOGGLE TAB BAR */}
         <div className='flex gap-2 flex-wrap'>
-          {tabs.map((t) => (
+          {tabs.map((t) => {
+            const isSummary = t.id === "summary";
+            const isActive = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`btn btn-sm px-4 py-2 font-semibold text-xs rounded-lg transition-all duration-200 select-none cursor-pointer ${
+                  isSummary
+                    ? "bg-[#0d9488] hover:bg-[#0f766e] text-white"
+                    : isActive
+                    ? "bg-zinc-950 hover:bg-zinc-900 text-white"
+                    : "bg-white hover:bg-zinc-50 text-zinc-800 border border-zinc-200/80"
+                }`}>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* DATE RANGE FILTER PANEL (Hidden for sales which has its own advanced filter section) */}
+        {tab !== "sales" && (
+          <div className='flex flex-wrap items-center gap-3 bg-white border border-zinc-200 px-4 py-2 rounded-xl shadow-sm'>
+            <div className='flex items-center gap-2'>
+              <span className='text-xs font-bold text-zinc-500 shrink-0 select-none'>
+                Dari:
+              </span>
+              <input
+                type='date'
+                className='input py-1 text-xs'
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <span className='text-xs font-bold text-zinc-500 shrink-0 select-none'>
+                Sampai:
+              </span>
+              <input
+                type='date'
+                className='input py-1 text-xs'
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+            </div>
+
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`btn btn-sm ${
-                tab === t.id
-                  ? "btn-primary"
-                  : "btn-secondary"
-              }`}>
-              {t.label}
+              onClick={fetchReport}
+              disabled={loading}
+              className='btn btn-primary btn-sm h-8'>
+              {loading ? "..." : "Terapkan"}
             </button>
-          ))}
-        </div>
-
-        {/* DATE RANGE FILTER PANEL */}
-        <div className='flex flex-wrap items-center gap-4'>
-          <div className='flex items-center gap-2'>
-            <span className='text-xs font-bold text-zinc-500 shrink-0 select-none'>
-              Dari:
-            </span>
-            <input
-              type='date'
-              className='input py-1.5'
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
           </div>
-
-          <div className='flex items-center gap-2'>
-            <span className='text-xs font-bold text-zinc-500 shrink-0 select-none'>
-              Sampai:
-            </span>
-            <input
-              type='date'
-              className='input py-1.5'
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </div>
-
-          <button
-            onClick={fetchReport}
-            disabled={loading}
-            className='btn btn-primary btn-sm'>
-            {loading ? "Memproses..." : "Terapkan"}
-          </button>
-        </div>
+        )}
       </div>
 
       {/* MAIN DATA VIEW */}
@@ -245,16 +421,234 @@ export default function LaporanPage() {
           ))}
         </div>
       ) : tab === "sales" && Array.isArray(data) ? (
-        <ReportTable
-          headers={["No SO", "Pelanggan", "Tanggal", "Total", "Status"]}
-          rows={data.map((o: any) => [
-            o.number,
-            o.customer?.name || "-",
-            formatDate(o.orderDate),
-            formatRupiah(o.total),
-            o.status,
-          ])}
-        />
+        <div className='flex flex-col gap-6 lg:gap-8'>
+          {/* THREE SALES SUMMARY METRICS CARDS */}
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+            {/* Total Omset Card */}
+            <div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 p-6 rounded-2xl flex justify-between items-center shadow-sm hover:shadow-md transition-all duration-300 group'>
+              <div className='min-w-0'>
+                <span className='text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 select-none'>
+                  Total Omset
+                </span>
+                <p className='text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mt-1.5 break-words'>
+                  {formatRupiah(totalOmset)}
+                </p>
+              </div>
+              <div className='w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-950/30 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0 transition-transform duration-300 group-hover:scale-105'>
+                <Wallet size={22} className='stroke-[2]' />
+              </div>
+            </div>
+
+            {/* Total Transaksi Card */}
+            <div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 p-6 rounded-2xl flex justify-between items-center shadow-sm hover:shadow-md transition-all duration-300 group'>
+              <div className='min-w-0'>
+                <span className='text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 select-none'>
+                  Total Transaksi (SO)
+                </span>
+                <p className='text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mt-1.5'>
+                  {totalTransaksi}
+                </p>
+              </div>
+              <div className='w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 transition-transform duration-300 group-hover:scale-105'>
+                <Receipt size={22} className='stroke-[2]' />
+              </div>
+            </div>
+
+            {/* Rata-rata Transaksi Card */}
+            <div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 p-6 rounded-2xl flex justify-between items-center shadow-sm hover:shadow-md transition-all duration-300 group'>
+              <div className='min-w-0'>
+                <span className='text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 select-none'>
+                  Rata-rata Transaksi
+                </span>
+                <p className='text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mt-1.5 break-words'>
+                  {formatRupiah(rataRataTransaksi)}
+                </p>
+              </div>
+              <div className='w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 transition-transform duration-300 group-hover:scale-105'>
+                <BarChart3 size={22} className='stroke-[2]' />
+              </div>
+            </div>
+          </div>
+
+          {/* FILTERS (DIRECTLY ON BACKGROUND) */}
+          <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6'>
+            {/* Pencarian */}
+            <div className='space-y-1.5'>
+              <label className='text-[10px] font-extrabold text-zinc-850 dark:text-zinc-250 uppercase tracking-wider block'>
+                Pencarian
+              </label>
+              <div className='relative'>
+                <Search
+                  className='absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500'
+                  size={14}
+                />
+                <input
+                  type='text'
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder='Cari No SO / Customer...'
+                  className='w-full h-10 pl-9 pr-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium'
+                />
+              </div>
+            </div>
+
+            {/* Bulan */}
+            <div className='space-y-1.5'>
+              <label className='text-[10px] font-extrabold text-zinc-850 dark:text-zinc-250 uppercase tracking-wider block'>
+                Bulan
+              </label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className='w-full h-10 px-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors cursor-pointer select'>
+                <option value='all'>Semua Bulan</option>
+                {months.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tahun */}
+            <div className='space-y-1.5'>
+              <label className='text-[10px] font-extrabold text-zinc-850 dark:text-zinc-250 uppercase tracking-wider block'>
+                Tahun
+              </label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className='w-full h-10 px-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors cursor-pointer select'>
+                <option value='all'>Semua Tahun</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Customer */}
+            <div className='space-y-1.5'>
+              <label className='text-[10px] font-extrabold text-zinc-850 dark:text-zinc-250 uppercase tracking-wider block'>
+                Customer
+              </label>
+              <select
+                value={selectedCustomer}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
+                className='w-full h-10 px-3 text-xs font-semibold text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 rounded-xl focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors cursor-pointer select'>
+                <option value='all'>Semua Customer</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* TABLE SECTION (DIRECTLY ON BACKGROUND) */}
+          <div className='flex flex-col gap-3'>
+            {/* Header info */}
+            <div className='flex items-end justify-between px-1'>
+              <div>
+                <h2 className='text-sm font-extrabold uppercase tracking-wider text-zinc-950 dark:text-zinc-50'>
+                  Data Sales Order
+                </h2>
+                <p className='text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 font-medium'>
+                  Menampilkan data transaksi sales order
+                </p>
+              </div>
+              <div className='text-xs font-bold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2.5 py-1 rounded-lg select-none'>
+                Total: {filteredSalesOrders.length} data
+              </div>
+            </div>
+
+            {/* Table Container Card */}
+            <div className='border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm'>
+              <div className='overflow-x-auto'>
+                <table className='w-full min-w-[900px] border-collapse'>
+                  <thead>
+                    <tr className='bg-[#F9FAFB]/60 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800'>
+                      <th className='px-6 py-3.5 text-left text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>
+                        No. SO
+                      </th>
+                      <th className='px-6 py-3.5 text-left text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>
+                        Tanggal
+                      </th>
+                      <th className='px-6 py-3.5 text-left text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>
+                        Customer
+                      </th>
+                      <th className='px-6 py-3.5 text-right text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>
+                        DPP
+                      </th>
+                      <th className='px-6 py-3.5 text-right text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>
+                        PPN
+                      </th>
+                      <th className='px-6 py-3.5 text-right text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider'>
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className='divide-y divide-zinc-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900'>
+                    {filteredSalesOrders.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className='py-20 text-center text-xs font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500'>
+                          Tidak ada data untuk ditampilkan
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredSalesOrders.map((order: any) => (
+                        <tr
+                          key={order.id}
+                          className='hover:bg-zinc-50/40 dark:hover:bg-zinc-800/20 transition-colors duration-150'>
+                          <td className='px-6 py-4 text-sm font-bold text-zinc-950 dark:text-zinc-50 whitespace-nowrap'>
+                            {order.number}
+                          </td>
+                          <td className='px-6 py-4 text-xs text-zinc-500 dark:text-zinc-400 font-semibold whitespace-nowrap'>
+                            {formatIndoDate(order.orderDate)}
+                          </td>
+                          <td className='px-6 py-4 text-sm'>
+                            <div className='flex flex-col'>
+                              <span className='font-bold text-zinc-800 dark:text-zinc-200'>
+                                {order.customer?.name || "-"}
+                              </span>
+                              {order.customer?.parent?.name && (
+                                <span className='text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mt-0.5'>
+                                  {order.customer.parent.name}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className='px-6 py-4 text-sm text-right font-medium text-zinc-500 dark:text-zinc-400 whitespace-nowrap'>
+                            {formatRupiah(order.subtotal || 0)}
+                          </td>
+                          <td className='px-6 py-4 text-sm text-right font-medium text-zinc-450 dark:text-zinc-450 whitespace-nowrap'>
+                            {formatRupiah(order.tax || 0)}
+                          </td>
+                          <td className='px-6 py-4 text-right whitespace-nowrap'>
+                            <span className='inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold text-teal-700 dark:text-teal-350 bg-teal-50/40 dark:bg-teal-950/20 border border-teal-100/30 dark:border-teal-900/10'>
+                              {formatRupiah(order.total || 0)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer */}
+              <div className='px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/20 flex items-center justify-between text-xs font-semibold text-zinc-400 dark:text-zinc-500'>
+                <span>Menampilkan {filteredSalesOrders.length} baris</span>
+                <span>Diperbarui otomatis</span>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : tab === "purchases" && Array.isArray(data) ? (
         <ReportTable
           headers={["No PO", "Supplier", "Tanggal", "Total", "Status"]}
@@ -353,9 +747,7 @@ function ReportTable({
           <thead>
             <tr>
               {headers.map((h) => (
-                <th key={h}>
-                  {h}
-                </th>
+                <th key={h}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -372,9 +764,7 @@ function ReportTable({
               rows.map((row, i) => (
                 <tr key={i}>
                   {row.map((cell, j) => (
-                    <td key={j}>
-                      {renderCell(cell)}
-                    </td>
+                    <td key={j}>{renderCell(cell)}</td>
                   ))}
                 </tr>
               ))
